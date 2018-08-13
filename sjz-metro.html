@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
+    	<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js" integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw==" crossorigin=""></script>
+    	<style>
+    		*{
+    			margin:0;
+    			padding:0;
+    		}
+    		#box{
+    			width:100vw;
+    			height:100vh;
+    			cursor: initial;
+    		}
+    		.bg{
+    			background-color:red;
+    		}
+    		.leaflet-popup-content{
+    			background:burlywood;
+    			color:white;
+    			margin:8px;
+    			line-height:24px;
+    			padding:0 10px;
+    		}
+    		.leaflet-popup-close-button{
+    			line-height: 24px !important;
+    			color:#fff !important;
+    			font-size: 18px !important;
+    		}
+    		.info-content{
+    			width:100%;
+    		}
+    		.info-content p{
+    			color:pink;
+    			line-height: 24px;
+    			margin: 0;
+    			min-width: 250px;
+    		}
+    		.info-content .destination{
+    			color:#000;
+    			font-weight: 700;
+    		}
+    		.time{
+    			display:inline-block;
+    			margin-left: 10px;
+    			float: right;
+    		}
+    		.cleafix:after{
+    			content:"";
+    			display: block;
+    			clear:both;
+    		}
+    		.info-content .morning{
+    			background:firebrick;
+    			color:#fff;
+    		}
+    		.info-content .evening{
+    			background:#008000;
+    			color:#fff;
+    		}
+    		.line{
+    			width:100%;
+    			height:30px;
+    			background: rgb(0,0,0);
+    			color:#fff;
+    			text-align: center;
+    		}
+    		.line-container{
+    			display: inline-block;
+    			margin:0 auto;
+    			text-align: center;
+    		}
+    		.line-container span{
+    			padding: 0 10px;
+    			line-height:30px;
+    			float: left;
+    			cursor: pointer;
+    		}
+    		.line-container span:nth-child(1):hover{
+    			background: rgb(228,120,120);
+    		}
+    		.line-container span:nth-child(2):hover{
+    			background: rgb(85,145,206);
+    		}
+    		.line-container span:nth-child(3):hover{
+    			background: rgb(23,190,176);
+    		}
+    		.leaflet-top{
+    			top:50px;
+    		}
+    	</style>
+	</head>
+	<body>
+		<div id="box">
+			<div class="line">
+				<div class="line-container">
+					<span id="one_id">1号线</span>
+					<span id="three_id">3号线</span>
+					<span id="all_id">全部</span>
+				</div>
+			</div>
+		</div>
+		<script type="text/javascript" src="sjz-metro.js" ></script>
+		<script>
+			let layer_name = L.layerGroup();
+			var mymap = L.map("box")
+				.setView([38.044099,114.478038],12)
+				.setMinZoom(12)
+				.setMaxZoom(14);
+			
+			//读取经纬度和地铁站名称（注：本数据无法使用geoJSON读取）
+			var latlng_arr = [],
+				name_arr = [],
+				name_latlng = [];
+ 			for( var i in s.l ){
+				for( var k in s.l[i].st){
+//					var lat = s.l[i].st[k].sl.split(',')
+					latlng_arr.push(s.l[i].st[k].sl);
+					name_arr.push( s.l[i].st[k].n );
+				}
+				for( let n in s.l[i].c ){
+					name_latlng.push(s.l[i].c[n])
+				}
+			}
+			var base_layer = L.layerGroup();
+			
+			//将1号线和3号线区分开来
+			var divide = name_arr.indexOf("洨河大道");
+			var line_one_name = name_arr.slice(0,divide+1),
+				line_three_name = name_arr.slice(divide+1),
+				line_one_latlng = latlng_arr.slice(0,divide+1),
+				line_three_latlng = latlng_arr.slice(divide+1);
+			var line_one = [],
+				line_three = [];
+				
+			var one_layer_group = L.layerGroup();	//1号线layer层
+			var one,one_circle;
+			for( var n in line_one_latlng ){
+				var lat = line_one_latlng[n].split(',');
+				line_one.push([Number(lat[1]),Number(lat[0])])
+			}
+			one = L.polyline(line_one,{color:'red'});
+			one.addTo(base_layer);
+			one.addTo(one_layer_group);
+			
+			for( let k in line_one_latlng ){
+				let lat = line_one_latlng[k].split(',');
+				one_circle = L.circle([Number(lat[1]),Number(lat[0])],{
+					radius:100,
+					color:'#000',
+					fillColor:"#fff",
+					fillOpacity:0
+				}).addTo(one_layer_group).bindPopup(`${line_one_name[k]}
+					<div class="info-content">
+						<p>1号线</p>
+						<p class="cleafix">开往：
+							<span class="destination">胶河大道</span>
+							<span class="time">
+								<span class="morning">首发：06:39</span>
+								<span class="evening">末班：22:22</span>
+							</span>
+						</p>
+						<p class="cleafix">开往：
+							<span class="destination">西关</span>
+							<span class="time">
+								<span class="morning">首发：06:32</span>
+								<span class="evening">末班：22:22</span>
+							</span>
+						</p>
+					</div>`);
+				one_circle.addTo(base_layer)
+			}
+			
+			var three_layer_group = L.layerGroup();	//3号线layer层
+			var three,three_circle;
+			for( var n in line_three_latlng ){
+				var lat = line_three_latlng[n].split(',');
+				line_three.push([Number(lat[1]),Number(lat[0])]);
+				three = L.polyline(line_three,{color:'orange'});
+				three.addTo(base_layer);
+				three.addTo(three_layer_group);
+			}
+			console.log(line_three_name)
+			
+			for( var n in line_three_latlng ){
+				var lat = line_three_latlng[n].split(',');
+				three_circle = L.circle([Number(lat[1]),Number(lat[0])],{
+					radius:100,
+					color:'#000',
+					fillColor:"#fff",
+					fillOpacity:0
+				}).addTo(three_layer_group).bindPopup(`${line_three_name[n]}
+					<div class="info-content">
+						<p>3号线</p>
+						<p class="cleafix">开往：
+							<span class="destination">石家庄站</span>
+							<span class="time">
+								<span class="morning">首发：06:39</span>
+								<span class="evening">末班：22:22</span>
+							</span>
+						</p>
+						<p class="cleafix">开往：
+							<span class="destination">市二中</span>
+							<span class="time">
+								<span class="morning">首发：06:32</span>
+								<span class="evening">末班：22:22</span>
+							</span>
+						</p>
+					</div>`);
+				three_circle.addTo(base_layer)
+			}
+				
+//			var lines = {
+//				"3号线":three_layer_group,
+//				'1号线':one_layer_group,
+//			}
+//			let base = {
+//				'baselayer':base_layer
+//			}
+			var popup = L.popup({
+				maxWidth:30,
+				minWidth:30,
+				closeButton:false
+			});
+			three.on("mouseover",function(e){
+				var popupContent = "3号线";
+				popup.setLatLng(e.latlng)
+						.setContent(popupContent)
+						.addTo(mymap)
+			})
+			
+			one.on("mouseover",function(e){
+				var popupContent = "1号线";
+				popup.setLatLng(e.latlng)
+						.setContent(popupContent)
+						.openOn(mymap)
+			})
+			
+			
+			base_layer.addTo(mymap)
+			
+			//修改鼠标样式
+			let oBox = document.getElementById('box');
+			document.onmousedown = function(){
+				document.onmousemove = function(){
+					oBox.style.cursor = 'move';
+				}
+			}
+			
+			document.onmouseup = function(){
+				document.onmousemove = null;
+				oBox.style.cursor = 'initial';
+			}
+			
+			//one_id
+			let one_id = document.getElementById('one_id');
+			let three_id = document.getElementById('three_id');
+			let all_id = document.getElementById('all_id');
+			
+			one_id.onclick = function(){
+				base_layer.removeFrom(mymap);
+				three_layer_group.removeFrom(mymap);
+//				mymap.removeLayer(base_layer);
+				one_layer_group.addTo(mymap)
+			}
+			three_id.onclick = function(){
+				base_layer.removeFrom(mymap);
+				one_layer_group.removeFrom(mymap);
+				three_layer_group.addTo(mymap)
+			}
+			all_id.onclick = function(){
+				one_layer_group.removeFrom(mymap);
+				three_layer_group.removeFrom(mymap);
+//				mymap.removeLayer(base_layer);
+				base_layer.addTo(mymap)
+			}
+		</script>
+	</body>
+</html>
